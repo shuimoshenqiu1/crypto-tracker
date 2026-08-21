@@ -32,3 +32,23 @@ export interface RegisterResponseData {
   role: string;
   created_at: number;
 }
+
+export interface CoinListItem {
+  id: string;
+  symbol: string;
+  name: string;
+  image_url: string;
+  current_price: number;
+  market_cap: number;
+  market_cap_rank: number;
+  price_change_pct_24h: number;
+  total_volume: number;
+  binance_symbol: string;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  page_size: number;
+}

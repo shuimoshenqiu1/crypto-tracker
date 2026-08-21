@@ -1,3 +1,9 @@
+x-backend-env: &backend-env
+  SECRET_KEY: "dev-secret-key-change-in-production-32chars!"
+  DATABASE_URL: "postgresql+asyncpg://postgres:postgres@db:5432/cryptotracker"
+  REDIS_URL: "redis://redis:6379/0"
+  CELERY_BROKER_URL: "redis://redis:6379/1"
+
 services:
   db:
     image: postgres:15-alpine
@@ -28,10 +34,7 @@ services:
   backend:
     build: ./backend
     environment:
-      SECRET_KEY: "dev-secret-key-change-in-production-32chars!"
-      DATABASE_URL: "postgresql+asyncpg://postgres:postgres@db:5432/cryptotracker"
-      REDIS_URL: "redis://redis:6379/0"
-      CELERY_BROKER_URL: "redis://redis:6379/1"
+      <<: *backend-env
     depends_on:
       db:
         condition: service_healthy
@@ -46,6 +49,24 @@ services:
 
   frontend:
     build: ./frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  celery_worker:
+    build: ./backend
+    command: celery -A app.tasks.celery_app worker --loglevel=info
+    environment:
+      <<: *backend-env
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  celery_beat:
+    build: ./backend
+    command: celery -A app.tasks.celery_app beat --loglevel=info
+    environment:
+      <<: *backend-env
     depends_on:
       backend:
         condition: service_healthy

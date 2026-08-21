@@ -8,10 +8,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.api.v1.auth import router as auth_router
+from app.api.v1.coins import router as coins_router
 from app.core.config import settings
 from app.db.base import Base
 from app.db.session import engine
-from app.models import User  # noqa: F401 -- ensure model registered
+from app.models import User, Coin  # noqa: F401 -- ensure models registered
 from app.schemas.common import error_response
 
 
@@ -21,6 +22,9 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
+    # Shutdown: close connections
+    from app.services.cache import close_redis
+    await close_redis()
     await engine.dispose()
 
 
@@ -73,3 +77,4 @@ async def health_check() -> dict:
 # --- Routers ---
 
 app.include_router(auth_router, prefix="/api/v1")
+app.include_router(coins_router, prefix="/api/v1")
