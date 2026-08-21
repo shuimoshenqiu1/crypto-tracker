@@ -1,7 +1,8 @@
 import { Layout, Button, Space, Typography, Menu } from 'antd';
-import { LogoutOutlined, DashboardOutlined, LineChartOutlined, StarOutlined } from '@ant-design/icons';
+import { LogoutOutlined, DashboardOutlined, LineChartOutlined, StarOutlined, BellOutlined } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { useAlertWebSocket } from '../hooks/useAlertWebSocket';
 
 const { Header, Content, Sider } = Layout;
 const { Title } = Typography;
@@ -10,6 +11,7 @@ const menuItems = [
   { key: '/', icon: <DashboardOutlined />, label: 'Dashboard' },
   { key: '/coins', icon: <LineChartOutlined />, label: 'Market' },
   { key: '/watchlist', icon: <StarOutlined />, label: 'Watchlist' },
+  { key: '/alerts', icon: <BellOutlined />, label: 'Alerts' },
 ];
 
 export default function AppLayout() {
@@ -17,12 +19,20 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Start alert WebSocket for real-time notifications on all pages
+  useAlertWebSocket();
+
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  const selectedKey = location.pathname.startsWith('/coins') ? '/coins' : location.pathname.startsWith('/watchlist') ? '/watchlist' : '/';
+  const getSelectedKey = () => {
+    if (location.pathname.startsWith('/coins')) return '/coins';
+    if (location.pathname.startsWith('/watchlist')) return '/watchlist';
+    if (location.pathname.startsWith('/alerts')) return '/alerts';
+    return '/';
+  };
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -46,7 +56,7 @@ export default function AppLayout() {
         <Sider width={200} style={{ background: '#fff' }}>
           <Menu
             mode="inline"
-            selectedKeys={[selectedKey]}
+            selectedKeys={[getSelectedKey()]}
             items={menuItems}
             onClick={({ key }) => navigate(key)}
             style={{ height: '100%', borderRight: 0 }}

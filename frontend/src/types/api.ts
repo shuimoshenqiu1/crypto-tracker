@@ -120,3 +120,59 @@ export interface PriceUpdate {
   volume_24h: number;
   timestamp: number;
 }
+
+// Alert types
+export type ConditionType = 'price_above' | 'price_below' | 'pct_change_above' | 'pct_change_below';
+
+export interface AlertItem {
+  id: string;
+  coin_id: string;
+  coin_symbol: string;
+  coin_name: string;
+  condition_type: ConditionType;
+  threshold: number;
+  is_active: boolean;
+  is_repeating: boolean;
+  cooldown_secs: number;
+  last_triggered: number | null;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface AlertHistoryItem {
+  id: string;
+  alert_id: string;
+  coin_id: string;
+  coin_symbol: string;
+  condition_type: ConditionType;
+  threshold: number;
+  trigger_price: number;
+  message: string;
+  triggered_at: number;
+}
+
+export interface CreateAlertRequest {
+  coin_id: string;
+  condition_type: ConditionType;
+  threshold: number;
+  is_repeating?: boolean;
+  cooldown_secs?: number;
+}
+
+export interface UpdateAlertRequest {
+  threshold?: number;
+  is_active?: boolean;
+  is_repeating?: boolean;
+  cooldown_secs?: number;
+}
+
+export interface AlertTriggeredEvent {
+  alert_id: string;
+  coin_id: string;
+  coin_symbol: string;
+  condition_type: ConditionType;
+  threshold: number;
+  trigger_price: number;
+  message: string;
+  triggered_at: number;
+}

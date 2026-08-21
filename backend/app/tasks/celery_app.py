@@ -11,7 +11,7 @@ celery_app = Celery(
     "cryptotracker",
     broker=broker_url,
     backend=result_backend,
-    include=["app.tasks.sync_coins"],  # Explicitly include task modules
+    include=["app.tasks.sync_coins", "app.tasks.check_alerts"],  # Explicitly include task modules
 )
 
 celery_app.conf.update(
@@ -25,10 +25,14 @@ celery_app.conf.update(
     broker_connection_retry_on_startup=True,
 )
 
-# Beat schedule: sync coin metadata every 60 seconds
+# Beat schedule
 celery_app.conf.beat_schedule = {
     "sync-coin-metadata-every-60s": {
         "task": "app.tasks.sync_coins.sync_coin_metadata",
         "schedule": 60.0,
+    },
+    "check-alert-rules-every-5s": {
+        "task": "app.tasks.check_alerts.check_alert_rules",
+        "schedule": 5.0,
     },
 }
