@@ -13,10 +13,11 @@ from app.api.v1.coins import router as coins_router
 from app.api.v1.klines import router as klines_router
 from app.api.v1.watchlist import router as watchlist_router
 from app.api.v1.alerts import router as alerts_router
+from app.api.v1.backtest import router as backtest_router
 from app.core.config import settings
 from app.db.base import Base
 from app.db.session import engine
-from app.models import User, Coin, Kline, Watchlist, Alert, AlertHistory  # noqa: F401 -- ensure models registered
+from app.models import User, Coin, Kline, Watchlist, Alert, AlertHistory, BacktestJob  # noqa: F401 -- ensure models registered
 from app.schemas.common import error_response
 from app.ws.prices import router as ws_router
 from app.ws.alerts import router as ws_alerts_router
@@ -105,5 +106,6 @@ app.include_router(coins_router, prefix="/api/v1")
 app.include_router(klines_router, prefix="/api/v1")
 app.include_router(watchlist_router, prefix="/api/v1")
 app.include_router(alerts_router, prefix="/api/v1")
+app.include_router(backtest_router, prefix="/api/v1")
 app.include_router(ws_router)
 app.include_router(ws_alerts_router)

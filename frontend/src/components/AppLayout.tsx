@@ -1,5 +1,5 @@
 import { Layout, Button, Space, Typography, Menu } from 'antd';
-import { LogoutOutlined, DashboardOutlined, LineChartOutlined, StarOutlined, BellOutlined } from '@ant-design/icons';
+import { LogoutOutlined, DashboardOutlined, LineChartOutlined, StarOutlined, BellOutlined, ExperimentOutlined } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useAlertWebSocket } from '../hooks/useAlertWebSocket';
@@ -12,6 +12,7 @@ const menuItems = [
   { key: '/coins', icon: <LineChartOutlined />, label: 'Market' },
   { key: '/watchlist', icon: <StarOutlined />, label: 'Watchlist' },
   { key: '/alerts', icon: <BellOutlined />, label: 'Alerts' },
+  { key: '/backtest', icon: <ExperimentOutlined />, label: 'Backtest' },
 ];
 
 export default function AppLayout() {
@@ -31,6 +32,7 @@ export default function AppLayout() {
     if (location.pathname.startsWith('/coins')) return '/coins';
     if (location.pathname.startsWith('/watchlist')) return '/watchlist';
     if (location.pathname.startsWith('/alerts')) return '/alerts';
+    if (location.pathname.startsWith('/backtest')) return '/backtest';
     return '/';
   };
 

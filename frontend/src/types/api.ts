@@ -176,3 +176,75 @@ export interface AlertTriggeredEvent {
   message: string;
   triggered_at: number;
 }
+
+// Backtest types
+export type StrategyName = 'ma_cross' | 'rsi' | 'bollinger';
+export type BacktestStatus = 'pending' | 'running' | 'completed' | 'failed';
+
+export interface StrategyParamSchema {
+  type: string;
+  min: number;
+  max: number;
+  default: number;
+  description: string;
+}
+
+export interface StrategyInfo {
+  name: StrategyName;
+  display_name: string;
+  description: string;
+  params_schema: Record<string, StrategyParamSchema>;
+}
+
+export interface StrategiesResponse {
+  strategies: StrategyInfo[];
+}
+
+export interface CreateBacktestRequest {
+  coin_id: string;
+  strategy_name: StrategyName;
+  params: Record<string, number>;
+  interval?: string;
+  start_time: number;
+  end_time: number;
+}
+
+export interface Trade {
+  type: 'buy' | 'sell';
+  price: number;
+  time: number;
+  quantity: number;
+}
+
+export interface EquityCurvePoint {
+  time: number;
+  value: number;
+}
+
+export interface BacktestResult {
+  total_return_pct: number;
+  annualized_return_pct: number;
+  max_drawdown_pct: number;
+  sharpe_ratio: number;
+  total_trades: number;
+  win_rate_pct: number;
+  profit_factor: number;
+  avg_holding_hours: number;
+  trades: Trade[];
+  equity_curve: EquityCurvePoint[];
+}
+
+export interface BacktestJob {
+  job_id: string;
+  coin_id?: string;
+  strategy_name?: StrategyName;
+  params?: Record<string, number>;
+  interval?: string;
+  start_time?: number;
+  end_time?: number;
+  status: BacktestStatus;
+  result: BacktestResult | null;
+  error_message?: string;
+  created_at: number;
+  completed_at: number | null;
+}

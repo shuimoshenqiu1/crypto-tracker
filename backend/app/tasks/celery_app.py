@@ -11,7 +11,7 @@ celery_app = Celery(
     "cryptotracker",
     broker=broker_url,
     backend=result_backend,
-    include=["app.tasks.sync_coins", "app.tasks.check_alerts"],  # Explicitly include task modules
+    include=["app.tasks.sync_coins", "app.tasks.check_alerts", "app.tasks.run_backtest"],  # Explicitly include task modules
 )
 
 celery_app.conf.update(
