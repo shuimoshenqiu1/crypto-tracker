@@ -1,5 +1,5 @@
 import api from './api';
-import type { ApiResponse, CoinListItem, PaginatedResponse } from '../types/api';
+import type { ApiResponse, CoinListItem, CoinDetail, PaginatedResponse } from '../types/api';
 
 export interface CoinsParams {
   page?: number;
@@ -11,5 +11,10 @@ export interface CoinsParams {
 
 export async function getCoins(params: CoinsParams = {}) {
   const res = await api.get<ApiResponse<PaginatedResponse<CoinListItem>>>('/coins', { params });
+  return res.data;
+}
+
+export async function getCoinDetail(coinId: string) {
+  const res = await api.get<ApiResponse<CoinDetail>>(`/coins/${coinId}`);
   return res.data;
 }
