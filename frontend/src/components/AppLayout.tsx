@@ -1,5 +1,5 @@
 import { Layout, Button, Space, Typography, Menu } from 'antd';
-import { LogoutOutlined, DashboardOutlined, LineChartOutlined } from '@ant-design/icons';
+import { LogoutOutlined, DashboardOutlined, LineChartOutlined, StarOutlined } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 
@@ -9,6 +9,7 @@ const { Title } = Typography;
 const menuItems = [
   { key: '/', icon: <DashboardOutlined />, label: 'Dashboard' },
   { key: '/coins', icon: <LineChartOutlined />, label: 'Market' },
+  { key: '/watchlist', icon: <StarOutlined />, label: 'Watchlist' },
 ];
 
 export default function AppLayout() {
@@ -21,7 +22,7 @@ export default function AppLayout() {
     navigate('/login');
   };
 
-  const selectedKey = location.pathname.startsWith('/coins') ? '/coins' : '/';
+  const selectedKey = location.pathname.startsWith('/coins') ? '/coins' : location.pathname.startsWith('/watchlist') ? '/watchlist' : '/';
 
   return (
     <Layout style={{ minHeight: '100vh' }}>

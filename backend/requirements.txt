@@ -13,3 +13,4 @@ alembic==1.13.0
 redis==5.0.1
 celery[redis]==5.3.6
 httpx==0.25.2
+websockets==12.0

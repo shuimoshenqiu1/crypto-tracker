@@ -4,6 +4,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Coins from './pages/Coins';
 import CoinDetail from './pages/CoinDetail';
+import Watchlist from './pages/Watchlist';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppLayout from './components/AppLayout';
 
@@ -24,6 +25,7 @@ export default function App() {
           <Route index element={<Dashboard />} />
           <Route path="coins" element={<Coins />} />
           <Route path="coins/:coinId" element={<CoinDetail />} />
+          <Route path="watchlist" element={<Watchlist />} />
         </Route>
       </Routes>
     </BrowserRouter>

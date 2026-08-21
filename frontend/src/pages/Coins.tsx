@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Table, Input, Space, Typography, Tag } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { Table, Input, Space, Typography, Tag, message } from 'antd';
+import { SearchOutlined, StarOutlined, StarFilled } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { SorterResult } from 'antd/es/table/interface';
 import type { CoinListItem } from '../types/api';
 import { getCoins, type CoinsParams } from '../services/coins';
+import { getWatchlist, addToWatchlist, removeFromWatchlist } from '../services/watchlist';
 
 const { Title } = Typography;
 
@@ -38,6 +39,8 @@ export default function Coins() {
     sort_order: 'asc',
   });
   const [searchValue, setSearchValue] = useState('');
+  const [watchlistIds, setWatchlistIds] = useState<Set<string>>(new Set());
+  const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -56,9 +59,24 @@ export default function Coins() {
     }
   }, []);
 
+  const fetchWatchlist = useCallback(async () => {
+    try {
+      const res = await getWatchlist();
+      if (res.code === 0) {
+        setWatchlistIds(new Set(res.data.items.map((item) => item.coin_id)));
+      }
+    } catch {
+      // Non-critical, ignore
+    }
+  }, []);
+
   useEffect(() => {
     fetchData(params);
   }, [params, fetchData]);
+
+  useEffect(() => {
+    fetchWatchlist();
+  }, [fetchWatchlist]);
 
   // Auto-refresh every 60 seconds
   useEffect(() => {
@@ -99,7 +117,62 @@ export default function Coins() {
     setParams(newParams);
   };
 
+  const handleToggleWatchlist = async (coinId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (togglingIds.has(coinId)) return;
+
+    setTogglingIds((prev) => new Set(prev).add(coinId));
+    try {
+      if (watchlistIds.has(coinId)) {
+        const res = await removeFromWatchlist(coinId);
+        if (res.code === 0) {
+          setWatchlistIds((prev) => {
+            const next = new Set(prev);
+            next.delete(coinId);
+            return next;
+          });
+          message.success('Removed from watchlist');
+        }
+      } else {
+        const res = await addToWatchlist(coinId);
+        if (res.code === 0) {
+          setWatchlistIds((prev) => new Set(prev).add(coinId));
+          message.success('Added to watchlist');
+        }
+      }
+    } catch {
+      message.error('Operation failed');
+    } finally {
+      setTogglingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(coinId);
+        return next;
+      });
+    }
+  };
+
   const columns: ColumnsType<CoinListItem> = [
+    {
+      title: '',
+      key: 'watchlist',
+      width: 40,
+      render: (_: unknown, record: CoinListItem) => {
+        const isInWatchlist = watchlistIds.has(record.id);
+        return (
+          <span
+            onClick={(e) => handleToggleWatchlist(record.id, e)}
+            style={{ cursor: 'pointer', fontSize: 16 }}
+            title={isInWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
+          >
+            {isInWatchlist ? (
+              <StarFilled style={{ color: '#faad14' }} />
+            ) : (
+              <StarOutlined style={{ color: '#d9d9d9' }} />
+            )}
+          </span>
+        );
+      },
+    },
     {
       title: '#',
       dataIndex: 'market_cap_rank',

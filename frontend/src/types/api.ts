@@ -90,3 +90,33 @@ export interface KlineResponse {
   interval: string;
   klines: KlineData[];
 }
+
+export interface WatchlistItem {
+  coin_id: string;
+  symbol: string;
+  name: string;
+  image_url: string;
+  current_price: number;
+  price_change_pct_24h: number;
+  sort_order: number;
+  added_at: number;
+}
+
+export interface WatchlistResponse {
+  items: WatchlistItem[];
+  total: number;
+}
+
+export interface WatchlistAddResponse {
+  coin_id: string;
+  sort_order: number;
+  added_at: number;
+}
+
+export interface PriceUpdate {
+  symbol: string;
+  price: number;
+  price_change_pct_24h: number;
+  volume_24h: number;
+  timestamp: number;
+}
