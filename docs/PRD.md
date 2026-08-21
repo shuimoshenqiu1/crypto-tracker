@@ -51,7 +51,7 @@ CryptoTracker 是一个实时加密货币价格追踪与智能告警系统，通
 |----|------|------|
 | AUTH-01 | 用户注册 | 邮箱 + 密码 + 昵称注册，密码 ≥ 8 字符，bcrypt 哈希存储 |
 | AUTH-02 | 用户登录 | 邮箱 + 密码登录，返回 JWT access_token (有效期 24h) |
-| AUTH-03 | Token 刷新 | access_token 过期前可刷新，无需重新登录 |
+| AUTH-03 | 获取当前用户 | Bearer Token 认证，返回当前用户信息 |
 | AUTH-04 | 登录频率限制 | 同一 IP 5 分钟内最多 10 次登录尝试 |
 | AUTH-05 | 密码强度校验 | 至少 8 字符，含字母和数字 |
 
@@ -105,7 +105,7 @@ DELETE /api/v1/watchlist/{coin_id}    → 移除
 | KL-01 | 获取 K 线数据 | 支持 1m/5m/15m/1h/4h/1d 六种时间周期 |
 | KL-02 | 历史数据 | 每次返回最多 500 根 K 线 |
 | KL-03 | 实时 K 线更新 | WebSocket 推送当前周期的 K 线更新 |
-| KL-04 | 前端图表渲染 | 使用 TradingView Lightweight Charts 或 ECharts 渲染 |
+| KL-04 | 前端图表渲染 | 使用 TradingView Lightweight Charts 渲染 K 线图 |
 
 **接口契约**:
 ```
@@ -131,17 +131,20 @@ WebSocket /ws/kline/{symbol}/{interval}
 ```
 POST /api/v1/alerts
   Request: {
-    symbol: "BTCUSDT",
-    type: "price_threshold" | "percent_change" | "volume_spike",
-    condition: { direction: "above" | "below", value: 60000 }
+    coin_id: "bitcoin",
+    condition_type: "price_above" | "price_below" | "pct_change_above" | "pct_change_below",
+    threshold: 70000.00,
+    is_repeating: false,
+    cooldown_secs: 3600
   }
 
-GET  /api/v1/alerts           → 用户的所有告警
+GET  /api/v1/alerts           → 用户的所有告警规则
 GET  /api/v1/alerts/history   → 已触发告警历史
-DELETE /api/v1/alerts/{id}    → 删除告警
+PATCH /api/v1/alerts/{alert_id} → 更新/静默告警
+DELETE /api/v1/alerts/{alert_id} → 删除告警
 
 WebSocket /ws/alerts
-  Push: { alert_id, symbol, type, message, triggered_at, current_price }
+  Push: { alert_id, coin_id, coin_symbol, condition_type, threshold, trigger_price, message, triggered_at }
 ```
 
 ### 3.6 策略回测模块 (Backtesting)
@@ -171,13 +174,14 @@ POST /api/v1/backtest
   Response: {
     code: 0,
     data: {
-      total_return: 0.23,
-      win_rate: 0.58,
-      max_drawdown: 0.12,
-      sharpe_ratio: 1.45,
-      total_trades: 47,
+      total_return_pct: 12.34,
+      win_rate_pct: 60.87,
+      max_drawdown_pct: -8.92,
+      sharpe_ratio: 1.85,
+      total_trades: 23,
+      profit_factor: 2.13,
       equity_curve: [...],
-      trades: [{ entry_time, exit_time, side, entry_price, exit_price, pnl }]
+      trades: [{ type, price, time, quantity }]
     }
   }
 ```
@@ -279,25 +283,25 @@ Then  客户端收到 is_closed=true 的完整 K 线
 **US-ALT-01: 创建价格告警**
 ```
 Given 用户已登录
-When  用户提交 POST /api/v1/alerts { symbol: "BTCUSDT", type: "price_threshold", condition: { direction: "above", value: 70000 } }
+When  用户提交 POST /api/v1/alerts { coin_id: "bitcoin", condition_type: "price_above", threshold: 70000 }
 Then  返回 HTTP 200, 包含 alert_id
 And   GET /api/v1/alerts 返回中包含该告警
 ```
 
 **US-ALT-02: 告警触发推送**
 ```
-Given 用户有活跃告警: BTCUSDT > 70000
+Given 用户有活跃告警: bitcoin price_above 70000
 And   用户已连接 WebSocket /ws/alerts
-When  BTCUSDT 价格首次突破 70000
-Then  WebSocket 推送告警消息，包含 alert_id, symbol, current_price, triggered_at
+When  BTC 价格首次突破 70000
+Then  WebSocket 推送告警消息，包含 alert_id, coin_id, trigger_price, triggered_at
 And   该告警状态变为 triggered
 And   告警写入历史记录
 ```
 
-**US-ALT-03: 成交量异动检测**
+**US-ALT-03: 百分比涨幅告警**
 ```
-Given 用户设置 ETHUSDT 成交量异动告警，倍数=3
-When  最近 5 分钟成交量 ≥ 前 1 小时均值 × 3
+Given 用户设置 ethereum pct_change_above 10.0（24h涨幅超10%）
+When  ETH 24h 涨幅达到 10.5%
 Then  触发告警推送
 ```
 
@@ -308,7 +312,7 @@ Then  触发告警推送
 Given 用户已登录
 When  用户提交 POST /api/v1/backtest { symbol: "ETHUSDT", interval: "1h", strategy: "ma_cross", params: { short_period: 7, long_period: 25 }, start_date: "2025-01-01", end_date: "2025-06-30", initial_capital: 10000, fee_rate: 0.001 }
 Then  返回 HTTP 200
-And   data 包含 total_return, win_rate, max_drawdown, sharpe_ratio, total_trades
+And   data 包含 total_return_pct, win_rate_pct, max_drawdown_pct, sharpe_ratio, total_trades
 And   total_trades > 0
 And   equity_curve 为非空数组
 ```
@@ -397,6 +401,7 @@ And   data 包含 user_active_alerts_count = 3
 - [ ] 同一邮箱再次注册 → 409
 - [ ] `curl -X POST http://localhost:8000/api/v1/auth/login -d '{"email":"test@test.com","password":"Test1234"}'` → 200, 返回 access_token
 - [ ] 错误密码登录 → 401
+- [ ] `curl -H "Authorization: Bearer <token>" http://localhost:8000/api/v1/auth/me` → 200, 返回当前用户信息
 - [ ] 无 Token 访问受保护端点 → 401
 
 ### 6.2 行情数据模块
@@ -423,8 +428,9 @@ And   data 包含 user_active_alerts_count = 3
 - [ ] DELETE /api/v1/alerts/{id} → 200
 
 ### 6.6 策略回测模块
-- [ ] POST /api/v1/backtest (MA 交叉策略) → 200, 返回回测结果
-- [ ] 结果包含 total_return, win_rate, max_drawdown, sharpe_ratio
+- [ ] POST /api/v1/backtest/run (MA 交叉策略) → 202, 返回 job_id
+- [ ] GET /api/v1/backtest/{job_id} → 200, status="completed", 返回回测结果
+- [ ] 结果包含 total_return_pct, win_rate_pct, max_drawdown_pct, sharpe_ratio
 - [ ] equity_curve 非空数组
 - [ ] 无效日期范围 → 422
 
@@ -481,7 +487,7 @@ And   data 包含 user_active_alerts_count = 3
 | 异步任务 | Celery + Redis |
 | 数据库 | PostgreSQL 15 |
 | 缓存 | Redis 7 |
-| 前端 | React 18 + Ant Design Pro + ECharts |
+| 前端 | React 18 + TypeScript + Ant Design 5.x + TradingView Lightweight Charts |
 | 实时通信 | FastAPI WebSocket |
 | 部署 | Docker Compose |
 | 数据源 | CoinGecko Demo API + Binance Public WebSocket + Binance REST |
