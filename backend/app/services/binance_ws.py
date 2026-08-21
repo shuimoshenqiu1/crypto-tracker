@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 BINANCE_WS_URL = "wss://stream.binance.com:9443/ws"
 REDIS_PRICES_CHANNEL = "prices"
-RECONNECT_DELAY = 5  # seconds
+RECONNECT_DELAY = 30  # seconds (Binance may be blocked in some regions)
 
 
 class BinanceWebSocketService:
@@ -33,9 +33,9 @@ class BinanceWebSocketService:
             try:
                 await self._connect_and_listen()
             except Exception as e:
-                logger.error(f"Binance WS error: {e}")
+                error_msg = str(e) or type(e).__name__
+                logger.warning(f"Binance WS connection failed: {error_msg} (will retry in {RECONNECT_DELAY}s)")
             if self._running:
-                logger.info(f"Binance WS reconnecting in {RECONNECT_DELAY}s...")
                 await asyncio.sleep(RECONNECT_DELAY)
 
     async def stop(self) -> None:

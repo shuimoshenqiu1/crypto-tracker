@@ -11,6 +11,7 @@ celery_app = Celery(
     "cryptotracker",
     broker=broker_url,
     backend=result_backend,
+    include=["app.tasks.sync_coins"],  # Explicitly include task modules
 )
 
 celery_app.conf.update(
@@ -21,6 +22,7 @@ celery_app.conf.update(
     enable_utc=True,
     task_soft_time_limit=120,
     task_time_limit=180,
+    broker_connection_retry_on_startup=True,
 )
 
 # Beat schedule: sync coin metadata every 60 seconds
@@ -30,6 +32,3 @@ celery_app.conf.beat_schedule = {
         "schedule": 60.0,
     },
 }
-
-# Auto-discover tasks
-celery_app.autodiscover_tasks(["app.tasks"])
